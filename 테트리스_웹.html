@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>테트리스 게임</title>
+    <style>
+        #game-board {
+            width: 300px;
+            height: 600px;
+            border: 2px solid black;
+            position: relative;
+        }
+        .block {
+            width: 30px;
+            height: 30px;
+            position: absolute;
+            border: 1px solid black;
+        }
+        #score {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-board"></div>
+    <div id="score">점수: 0</div>
+    
+    <script>
+        const BOARD_WIDTH = 10;
+        const BOARD_HEIGHT = 20;
+        const BLOCK_SIZE = 30;
+        
+        let score = 0;
+        let currentPiece = null;
+        let board = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0));
+        
+        // 테트리스 블록 모양 정의
+        const SHAPES = [
+            [[1, 1, 1, 1]], // I
+            [[1, 1], [1, 1]], // O
+            [[1, 1, 1], [0, 1, 0]], // T
+            [[1, 1, 1], [1, 0, 0]], // L
+            [[1, 1, 1], [0, 0, 1]], // J
+            [[1, 1, 0], [0, 1, 1]], // S
+            [[0, 1, 1], [1, 1, 0]]  // Z
+        ];
+        
+        // 게임 초기화
+        function init() {
+            document.addEventListener('keydown', handleKeyPress);
+            createNewPiece();
+            gameLoop();
+        }
+        
+        // 새로운 블록 생성
+        function createNewPiece() {
+            const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+            currentPiece = {
+                shape: shape,
+                x: Math.floor(BOARD_WIDTH / 2) - Math.floor(shape[0].length / 2),
+                y: 0
+            };
+        }
+        
+        // 게임 루프
+        function gameLoop() {
+            if (canMove(0, 1)) {
+                currentPiece.y++;
+            } else {
+                freezePiece();
+                clearLines();
+                createNewPiece();
+                if (!canMove(0, 0)) {
+                    alert('게임 오버!');
+                    return;
+                }
+            }
+            draw();
+            setTimeout(gameLoop, 1000);
+        }
+        
+        // 키보드 입력 처리
+        function handleKeyPress(event) {
+            switch(event.keyCode) {
+                case 37: // 왼쪽
+                    if (canMove(-1, 0)) currentPiece.x--;
+                    break;
+                case 39: // 오른쪽
+                    if (canMove(1, 0)) currentPiece.x++;
+                    break;
+                case 40: // 아래
+                    if (canMove(0, 1)) currentPiece.y++;
+                    break;
+                case 38: // 위 (회전)
+                    rotate();
+                    break;
+            }
+            draw();
+        }
+        
+        // 블록 이동 가능 여부 확인
+        function canMove(dx, dy) {
+            for (let y = 0; y < currentPiece.shape.length; y++) {
+                for (let x = 0; x < currentPiece.shape[y].length; x++) {
+                    if (currentPiece.shape[y][x]) {
+                        const newX = currentPiece.x + x + dx;
+                        const newY = currentPiece.y + y + dy;
+                        if (newX < 0 || newX >= BOARD_WIDTH || newY >= BOARD_HEIGHT) return false;
+                        if (newY >= 0 && board[newY][newX]) return false;
+                    }
+                }
+            }
+            return true;
+        }
+        
+        // 블록 고정
+        function freezePiece() {
+            for (let y = 0; y < currentPiece.shape.length; y++) {
+                for (let x = 0; x < currentPiece.shape[y].length; x++) {
+                    if (currentPiece.shape[y][x]) {
+                        board[currentPiece.y + y][currentPiece.x + x] = 1;
+                    }
+                }
+            }
+        }
+        
+        // 완성된 줄 제거
+        function clearLines() {
+            for (let y = BOARD_HEIGHT - 1; y >= 0; y--) {
+                if (board[y].every(cell => cell)) {
+                    board.splice(y, 1);
+                    board.unshift(Array(BOARD_WIDTH).fill(0));
+                    score += 100;
+                    document.getElementById('score').textContent = '점수: ' + score;
+                }
+            }
+        }
+        
+        // 화면 그리기
+        function draw() {
+            const gameBoard = document.getElementById('game-board');
+            gameBoard.innerHTML = '';
+            
+            // 보드에 있는 블록 그리기
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    if (board[y][x]) {
+                        createBlock(x, y, 'blue');
+                    }
+                }
+            }
+            
+            // 현재 움직이는 블록 그리기
+            for (let y = 0; y < currentPiece.shape.length; y++) {
+                for (let x = 0; x < currentPiece.shape[y].length; x++) {
+                    if (currentPiece.shape[y][x]) {
+                        createBlock(currentPiece.x + x, currentPiece.y + y, 'red');
+                    }
+                }
+            }
+        }
+        
+        // 블록 요소 생성
+        function createBlock(x, y, color) {
+            const block = document.createElement('div');
+            block.className = 'block';
+            block.style.left = x * BLOCK_SIZE + 'px';
+            block.style.top = y * BLOCK_SIZE + 'px';
+            block.style.backgroundColor = color;
+            document.getElementById('game-board').appendChild(block);
+        }
+        
+        // 블록 회전
+        function rotate() {
+            const newShape = Array(currentPiece.shape[0].length).fill()
+                .map((_, i) => currentPiece.shape.map(row => row[i]).reverse());
+            const oldShape = currentPiece.shape;
+            currentPiece.shape = newShape;
+            if (!canMove(0, 0)) {
+                currentPiece.shape = oldShape;
+            }
+        }
+        
+        // 게임 시작
+        init();
+    </script>
+</body>
+</html>
