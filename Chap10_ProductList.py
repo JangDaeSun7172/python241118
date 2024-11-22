@@ -105,7 +105,7 @@ class DemoForm(QMainWindow, form_class):
             
             row += 1
             print("row: ", row)
-        self.clearprodxx()
+        self.clearInputFields()
 
     def doubleClick(self):
         try:
@@ -113,13 +113,13 @@ class DemoForm(QMainWindow, form_class):
             self.prodName.setText(self.tableWidget.item(self.tableWidget.currentRow(), 1).text())
             self.prodPrice.setText(self.tableWidget.item(self.tableWidget.currentRow(), 2).text())
         except:
-            self.clearprodxx()
+            self.clearInputFields()
             pass
 
-    def clearprodxx(self):
-        self.prodID.setText("")
-        self.prodName.setText("")
-        self.prodPrice.setText("")
+    def clearInputFields(self):
+        self.prodID.clear()
+        self.prodName.clear()
+        self.prodPrice.clear()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
